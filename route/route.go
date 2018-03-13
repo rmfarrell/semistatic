@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
 )
 
 // Route is struct which contains handlers for both static controllers and HTTP.ServeMux handlers
+// TODO: rename
 type Route struct {
 	Path              string
 	StaticHandlerFunc func(*http.Request) []byte
@@ -15,7 +18,7 @@ type Route struct {
 }
 
 // NewRouteInput is the input struct for NewRoute constructor
-// callback passes ResponseWriter which can be used to set headers in  server context
+// Callback passes ResponseWriter which can be used to set headers in  server context
 type NewRouteInput struct {
 	Path              string
 	StaticHandlerFunc func(*http.Request) []byte
@@ -23,6 +26,7 @@ type NewRouteInput struct {
 }
 
 // NewRoute is constructor for new route
+// TODO: would http.ServeContent in handlerFunc work better?
 func NewRoute(in *NewRouteInput) *Route {
 	// TODO: validate
 	route := Route{in.Path, in.StaticHandlerFunc, nil}
@@ -34,7 +38,7 @@ func NewRoute(in *NewRouteInput) *Route {
 }
 
 // AddTo appends the route to an http.ServeMux
-func (rt *Route) AddTo(m *http.ServeMux) *Route {
+func (rt *Route) AddToMux(m *mux.Router) *Route {
 	m.HandleFunc(rt.Path, rt.HandlerFunc)
 	return rt
 }

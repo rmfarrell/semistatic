@@ -38,16 +38,16 @@ func aHandler(r *http.Request) []byte {
 }
 
 func main() {
-	static := mux.NewRouter()
-	server := mux.NewRouter()
+	mux := mux.NewRouter()
 	s := rt.NewRoute(&rt.NewRouteInput{"/index.html", aHandler, success})
-	s.AddTo(static)
-	s.AddTo(server)
+	mux.HandleFunc("test", s.HandlerFunc)
+	s.AddToMux(mux)
+	// s.AddTo(server)
 	err := s.Compile(&http.Request{}, dir)
 	if err != nil {
 		log.Println(err)
 	}
 
 	fmt.Println(fmt.Sprintf("Listening on port %d", port))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), server))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
 }
