@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -10,19 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	rt "github.com/rmfarrell/semistatic/route"
 )
-
-type route struct {
-	path       string
-	handler    func(*http.Request) []byte
-	muxHandler func(http.ResponseWriter, *http.Request)
-}
-
-type newRouteInput struct {
-	path     string
-	handler  func(*http.Request) []byte
-	callback func(http.ResponseWriter)
-}
 
 var (
 	port int
@@ -39,26 +27,6 @@ func init() {
 	dir = currentDir
 }
 
-// Add a route to a router
-func (rt *route) AddTo(m *mux.Router) *route {
-	m.HandleFunc(rt.path, rt.muxHandler)
-	return rt
-}
-
-// Constructor for new lib route
-func newRoute(in *newRouteInput) *route {
-	// TODO: validate
-	route := route{
-		path:    in.path,
-		handler: in.handler,
-	}
-	route.muxHandler = func(w http.ResponseWriter, r *http.Request) {
-		w.Write(route.handler(r))
-		in.callback(w)
-	}
-	return &route
-}
-
 // Generic success handler
 func success(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
@@ -69,29 +37,13 @@ func aHandler(r *http.Request) []byte {
 	return []byte("Hello World!\n")
 }
 
-// Compile a static route
-func (rt *route) compile(req *http.Request) error {
-	f, err := os.Create(fmt.Sprintf("%s%s", dir, rt.path))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	_, err = w.Write(rt.handler(req))
-	if err != nil {
-		return err
-	}
-	w.Flush()
-	return nil
-}
-
 func main() {
 	static := mux.NewRouter()
 	server := mux.NewRouter()
-	s := newRoute(&newRouteInput{"/index.html", aHandler, success})
+	s := rt.NewRoute(&rt.NewRouteInput{"/index.html", aHandler, success})
 	s.AddTo(static)
 	s.AddTo(server)
-	err := s.compile(&http.Request{})
+	err := s.Compile(&http.Request{}, dir)
 	if err != nil {
 		log.Println(err)
 	}
